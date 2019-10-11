@@ -1,0 +1,174 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled4.ipynb",
+      "provenance": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Skp80/NLP-with-Python/blob/master/Traditional_NLP_Methods%20-%20Text_Processing\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "jrkQuzXpJNp3",
+        "colab_type": "code",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 147
+        },
+        "outputId": "99b51c73-0c1e-4e6a-9f34-445dfe4ba4a5"
+      },
+      "source": [
+        "!pip install textsearch\n",
+        "!pip install contractions\n",
+        "!pip install tqdm\n",
+        "!pip install nltk"
+      ],
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Requirement already satisfied: textsearch in /usr/local/lib/python3.6/dist-packages (0.0.17)\n",
+            "Requirement already satisfied: pyahocorasick in /usr/local/lib/python3.6/dist-packages (from textsearch) (1.4.0)\n",
+            "Requirement already satisfied: Unidecode in /usr/local/lib/python3.6/dist-packages (from textsearch) (1.1.1)\n",
+            "Requirement already satisfied: contractions in /usr/local/lib/python3.6/dist-packages (0.0.21)\n",
+            "Requirement already satisfied: tqdm in /usr/local/lib/python3.6/dist-packages (4.28.1)\n",
+            "Requirement already satisfied: nltk in /usr/local/lib/python3.6/dist-packages (3.2.5)\n",
+            "Requirement already satisfied: six in /usr/local/lib/python3.6/dist-packages (from nltk) (1.12.0)\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "RHcFoJcAJoLw",
+        "colab_type": "code",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 110
+        },
+        "outputId": "beb8bed0-6f63-40d7-b017-e8e70ad5bb12"
+      },
+      "source": [
+        "import nltk\n",
+        "nltk.download('punkt')\n",
+        "nltk.download('stopwords')"
+      ],
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "[nltk_data] Downloading package punkt to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping tokenizers/punkt.zip.\n",
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping corpora/stopwords.zip.\n"
+          ],
+          "name": "stdout"
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "True"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 5
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "c6v7td5gJ4MX",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "source": [
+        "import re\n",
+        "from bs4 import BeautifulSoup\n",
+        "import unicodedata\n",
+        "import contractions\n",
+        "import spacy\n",
+        "import nltk\n",
+        "\n",
+        "\n",
+        "nlp = spacy.load('en', parse=False, tag=False, entity=False )\n",
+        "ps = nltk.porter.PorterStemmer()\n",
+        "\n",
+        "\n",
+        "##Extract the textual information using Webscraper like BS4\n",
+        "def strip_html_tags(text):\n",
+        "    soup = BeautifulSoup(text, \"html.parser\")\n",
+        "    [s.extract() for s in soup(['iframe', 'script'])]\n",
+        "    stripped_text = soup.get_text()\n",
+        "    stripped_text = re.sub(r'[\\r|\\n|\\r\\n]+', '\\n', stripped_text)\n",
+        "    return stripped_text\n",
+        "\n",
+        "def remove_accented_chars(text):\n",
+        "    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore')\n",
+        "    return text\n",
+        "\n",
+        "\n",
+        "def expand_contractions(text):\n",
+        "    return contractions.fix(text)\n",
+        "\n",
+        "\n",
+        "def spacy_lemmatize_text(text):\n",
+        "    text = nlp(text)\n",
+        "    text = ' '.join([word.lemma_ if word.lemma_ != '-PRON-' else word.text for word in text])\n",
+        "    return text\n",
+        "\n",
+        "\n",
+        "def simple_stemming(text, stemmer=ps):\n",
+        "    text = ' '.join([stemmer.stem(word) for word in text.split()])\n",
+        "    return text\n",
+        "\n",
+        "\n",
+        "def remove_special_characters(text, remove_digits=False):\n",
+        "    pattern = r'[^a-zA-Z0-9\\s]' if not remove_digits else r'[^a-zA-Z\\s]'\n",
+        "    text = re.sub(pattern, '', text)\n",
+        "    return text\n",
+        "\n",
+        "\n",
+        "def remove_stopwords(text, is_lower_case=False, stopwords=None):\n",
+        "    if not stopwords:\n",
+        "        stopwords = nltk.corpus.stopwords.words('english')\n",
+        "    tokens = nltk.word_tokenize(text)\n",
+        "    tokens = [token.strip() for token in tokens]\n",
+        "    \n",
+        "    if is_lower_case:\n",
+        "        filtered_tokens = [token for token in tokens if token not in stopwords]\n",
+        "    else:\n",
+        "        filtered_tokens = [token for token in tokens if token.lower() not in stopwords]\n",
+        "    \n",
+        "    filtered_text = ' '.join(filtered_tokens)    \n",
+        "    return filtered_text"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    }
+  ]
+}
